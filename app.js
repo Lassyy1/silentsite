@@ -1,9 +1,29 @@
+
+// ==========================================================================
+// 0. THEME SWITCHER (Light / Dark)
+// ==========================================================================
+function initThemeToggle() {
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  const savedTheme = localStorage.getItem('silent_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const nextTheme = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('silent_theme', nextTheme);
+    });
+  }
+}
+
 /**
  * SILENT CLIENT // FRONTEND RIG & SPA ENGINE
  * Seamless transitions, backend API sync with SQLite, Catlavan architecture
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  initThemeToggle();
   initSpaRouter();
   initAuthSystem();
   initProfileDashboard();
