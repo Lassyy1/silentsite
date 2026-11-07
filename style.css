@@ -1583,11 +1583,98 @@ html[data-theme="light"] .mh-btn-white-sm {
   transform: translateY(0);
 }
 
-/* Night-Mode Profile Styles (Gentle on the eyes, deep matte dark obsidian) */
+/* ==========================================================================
+   Catlavan Clean Light Profile View (White & Slate Theme)
+   ========================================================================== */
+body.in-profile .mh-header {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+body.in-profile .mh-brand {
+  color: #16171b !important;
+}
+body.in-profile .mh-brand-img {
+  filter: brightness(0.2) !important;
+}
+body.in-profile .mh-nav-link {
+  color: #5a6072 !important;
+}
+body.in-profile .mh-nav-link:hover {
+  color: #16171b !important;
+}
+body.in-profile .mh-nav-link svg {
+  color: #5a6072 !important;
+}
+body.in-profile .mh-nav-link:hover svg {
+  color: #16171b !important;
+}
+body.in-profile .mh-user-pill {
+  background: #f1f3f6 !important;
+  border-color: #dbe0ea !important;
+}
+body.in-profile .mh-user-pill:hover {
+  background: #e5e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+body.in-profile .mh-user-name {
+  color: #16171b !important;
+}
+
+/* User pill styling: ensure perfect centering and margins */
+.mh-user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--mh-line-bright);
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.mh-user-pill:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.mh-user-avatar-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+
+.mh-user-name {
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Add-on single card centered */
+.cv-addons-grid {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.cv-addon-single {
+  max-width: 380px;
+  width: 100%;
+}
+
 #profileView {
-  background: #090a0e;
+  background: #f8f9fa;
   min-height: 100vh;
   padding-top: 40px;
+  color: #16171b;
 }
 
 .pf-container {
@@ -1596,41 +1683,45 @@ html[data-theme="light"] .mh-btn-white-sm {
   padding: 0 24px;
 }
 
+.pf-welcome {
+  margin-bottom: 24px;
+}
+
 .pf-welcome h1 {
   font-size: 30px;
   font-weight: 700;
-  color: #f1f3f8;
+  color: #16171b;
+  margin-bottom: 6px;
   letter-spacing: -0.02em;
 }
 
 .pf-welcome p {
-  font-size: 14px;
-  color: #7b8090;
-  margin-top: 4px;
+  font-size: 14.5px;
+  color: #5a6072;
 }
 
 .pf-layout {
   display: flex;
   gap: 24px;
-  margin-top: 24px;
   align-items: flex-start;
 }
 
 .pf-sidebar {
   width: 270px;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
 }
 
+/* User Card in Sidebar */
 .pf-user-card {
-  background: #121319;
-  border: 1px solid #1e2029;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
 
 .pf-user-card-left {
@@ -1644,7 +1735,8 @@ html[data-theme="light"] .mh-btn-white-sm {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid #232532;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .pf-user-meta {
@@ -1656,35 +1748,36 @@ html[data-theme="light"] .mh-btn-white-sm {
 .pf-name-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pf-name-label {
   font-size: 14.5px;
   font-weight: 700;
-  color: #f1f3f8;
+  color: #16171b;
 }
 
 .pf-badge-default {
   font-size: 10.5px;
   font-weight: 600;
-  color: #8b90a0;
-  background: #181a22;
-  padding: 2px 7px;
-  border-radius: 5px;
-  border: 1px solid #242735;
+  color: #475467;
+  background: #f2f4f7;
+  border: 1px solid #e4e7ec;
+  padding: 1px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .pf-userid {
   font-size: 12px;
-  color: #5c6171;
-  font-family: var(--mh-mono);
+  color: #7b8293;
 }
 
 .pf-logout-btn {
-  background: transparent;
-  border: none;
-  color: #7b8090;
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  color: #5a6072;
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -1696,8 +1789,9 @@ html[data-theme="light"] .mh-btn-white-sm {
 }
 
 .pf-logout-btn:hover {
-  background: #1a1c25;
-  color: #f1f3f8;
+  background: #fee4e2;
+  border-color: #fecdca;
+  color: #d92d20;
 }
 
 .pf-logout-btn svg {
@@ -1709,9 +1803,10 @@ html[data-theme="light"] .mh-btn-white-sm {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #5c6171;
-  margin: 22px 0 8px 6px;
+  letter-spacing: 0.08em;
+  color: #8a91a0;
+  margin-bottom: 8px;
+  padding: 0 8px;
 }
 
 .pf-menu-list {
@@ -1724,13 +1819,13 @@ html[data-theme="light"] .mh-btn-white-sm {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-radius: 10px;
+  background: transparent;
+  border: none;
+  color: #5a6072;
   font-size: 13.5px;
   font-weight: 500;
-  color: #7b8090;
-  background: transparent;
-  border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.18s ease;
   width: 100%;
@@ -1740,36 +1835,39 @@ html[data-theme="light"] .mh-btn-white-sm {
 .pf-menu-item svg {
   width: 16px;
   height: 16px;
-  color: inherit;
 }
 
 .pf-menu-item:hover {
-  color: #f1f3f8;
-  background: rgba(255, 255, 255, 0.04);
+  color: #16171b;
+  background: #f1f3f5;
 }
 
 .pf-menu-item.active {
-  background: #171822;
-  color: #f1f3f8;
-  border-color: #242735;
-  font-weight: 600;
+  background: #1e2229;
+  color: #ffffff;
 }
 
+.pf-menu-item.active svg {
+  color: #ffffff;
+}
+
+/* Need Help Box */
 .pf-help-box {
   margin-top: 80px;
-  padding: 4px 6px;
+  padding: 16px 8px 4px;
+  border-top: 1px dashed #e2e5eb;
 }
 
 .pf-help-title {
   font-size: 13px;
   font-weight: 600;
-  color: #f1f3f8;
-  margin-bottom: 3px;
+  color: #16171b;
+  margin-bottom: 2px;
 }
 
 .pf-help-sub {
   font-size: 12px;
-  color: #5c6171;
+  color: #7b8293;
   margin-bottom: 12px;
 }
 
@@ -1783,22 +1881,23 @@ html[data-theme="light"] .mh-btn-white-sm {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 8px 12px;
-  background: #121319;
-  border: 1px solid #1e2029;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e5eb;
+  padding: 7px 10px;
   border-radius: 8px;
-  color: #8b90a0;
-  text-decoration: none;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
+  color: #344054;
+  text-decoration: none;
   transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 }
 
 .pf-help-btn:hover {
-  color: #f1f3f8;
-  border-color: #2b2e3c;
-  background: #181922;
+  color: #16171b;
+  background: #f8f9fa;
+  border-color: #cbd5e1;
 }
 
 .pf-help-btn svg {
@@ -1806,7 +1905,7 @@ html[data-theme="light"] .mh-btn-white-sm {
   height: 14px;
 }
 
-/* Right Content */
+/* Right Main Content */
 .pf-main {
   flex: 1;
   display: flex;
@@ -1815,11 +1914,11 @@ html[data-theme="light"] .mh-btn-white-sm {
 }
 
 .pf-card {
-  background: #121319;
-  border: 1px solid #1e2029;
-  border-radius: 18px;
-  padding: 24px;
-  position: relative;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 24px 26px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
 .pf-card-header {
@@ -1829,33 +1928,33 @@ html[data-theme="light"] .mh-btn-white-sm {
 .pf-card-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .pf-card-icon {
   width: 16px;
   height: 16px;
-  color: #7b8090;
+  color: #5a6072;
 }
 
 .pf-card-title {
-  font-size: 16px;
+  font-size: 16.5px;
   font-weight: 700;
-  color: #f1f3f8;
-  letter-spacing: -0.01em;
+  color: #16171b;
 }
 
 .pf-card-subtitle {
   font-size: 13px;
-  color: #7b8090;
-  margin-top: 4px;
+  color: #5a6072;
 }
 
+/* Password Subcard */
 .pf-subcard-password {
-  background: #171822;
-  border: 1px solid #232735;
+  background: #f8f9fb;
+  border: 1px solid #eaecf0;
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1871,44 +1970,46 @@ html[data-theme="light"] .mh-btn-white-sm {
 .pf-subcard-icon {
   width: 16px;
   height: 16px;
-  color: #7b8090;
+  color: #5a6072;
 }
 
 .pf-subcard-title {
   font-size: 13.5px;
   font-weight: 600;
-  color: #f1f3f8;
+  color: #16171b;
+  margin-bottom: 2px;
 }
 
 .pf-subcard-desc {
   font-size: 12.5px;
-  color: #7b8090;
-  margin-top: 2px;
+  color: #5a6072;
 }
 
 .pf-btn-secondary {
-  background: #20222e;
-  border: 1px solid #2d3040;
-  color: #f1f3f8;
-  font-size: 12.5px;
-  font-weight: 500;
-  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid #d0d5dd;
+  color: #344054;
+  padding: 7px 14px;
   border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
-  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 }
 
 .pf-btn-secondary:hover {
-  background: #282a39;
-  border-color: #3b3f53;
+  background: #f3f4f6;
+  border-color: #98a2b3;
+  color: #101828;
 }
 
+/* Info Grid (Email, Date, HWID) */
 .pf-info-grid {
   display: grid;
   grid-template-columns: 1.4fr 1.1fr 1.1fr;
-  gap: 18px;
-  padding-top: 6px;
+  gap: 16px;
+  padding-top: 4px;
 }
 
 .pf-info-col {
@@ -1921,33 +2022,35 @@ html[data-theme="light"] .mh-btn-white-sm {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
-  color: #7b8090;
+  font-size: 12px;
+  font-weight: 500;
+  color: #7b8293;
 }
 
 .pf-info-label-row svg {
   width: 14px;
   height: 14px;
-  color: inherit;
+  color: #7b8293;
 }
 
 .pf-info-link {
-  color: #8b90a0;
+  color: #475467;
   text-decoration: none;
-  font-size: 12px;
-  margin-left: auto;
-  transition: color 0.18s ease;
+  font-size: 11.5px;
+  margin-left: 4px;
+  font-weight: 500;
+  transition: color 0.18s;
 }
 
 .pf-info-link:hover {
-  color: #f1f3f8;
+  color: #16171b;
   text-decoration: underline;
 }
 
 .pf-info-val {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
-  color: #d8dbe5;
+  color: #16171b;
 }
 
 .pf-info-val.mono {
@@ -1959,21 +2062,20 @@ html[data-theme="light"] .mh-btn-white-sm {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #8b90a0;
 }
 
 .pf-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #5c6171;
+  background: #f04438;
 }
 
 .pf-dot.green {
-  background: #10b981;
+  background: #12b76a;
 }
 
-/* Bottom Grid */
+/* Bottom 2-Column Grid */
 .pf-bottom-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1992,13 +2094,14 @@ html[data-theme="light"] .mh-btn-white-sm {
 .pf-sub-metric-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
 .pf-sub-big {
   font-size: 26px;
   font-weight: 700;
-  color: #f1f3f8;
+  color: #16171b;
   letter-spacing: -0.02em;
 }
 
@@ -2006,19 +2109,32 @@ html[data-theme="light"] .mh-btn-white-sm {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid #232532;
-  color: #8b90a0;
-  font-size: 11.5px;
-  font-weight: 500;
-  padding: 3px 9px;
+  background: #fef3f2;
+  border: 1px solid #fee4e2;
+  color: #b42318;
+  padding: 3px 8px;
   border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.pf-pill-inactive .pf-dot {
+  background: #d92d20;
+}
+
+.pf-pill-inactive.active-plan {
+  background: #ecfdf3;
+  border-color: #d1fadf;
+  color: #027a48;
+}
+
+.pf-pill-inactive.active-plan .pf-dot {
+  background: #12b76a;
 }
 
 .pf-sub-status-desc {
   font-size: 12.5px;
-  color: #5c6171;
-  margin-top: 4px;
+  color: #7b8293;
 }
 
 .pf-extend-block {
@@ -2027,9 +2143,9 @@ html[data-theme="light"] .mh-btn-white-sm {
 
 .pf-extend-label {
   font-size: 12.5px;
-  color: #7b8090;
-  font-weight: 500;
+  color: #5a6072;
   margin-bottom: 8px;
+  font-weight: 500;
 }
 
 .pf-input-group {
@@ -2039,42 +2155,45 @@ html[data-theme="light"] .mh-btn-white-sm {
 
 .pf-input {
   flex: 1;
-  background: #0d0e13;
-  border: 1px solid #232532;
-  border-radius: 8px;
-  color: #f1f3f8;
-  font-family: var(--mh-font);
+  background: #ffffff;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #101828;
   font-size: 13px;
-  padding: 10px 14px;
+  font-family: var(--mh-mono);
   outline: none;
-  transition: border-color 0.18s ease;
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 .pf-input:focus {
-  border-color: #3b3f53;
+  border-color: #1e2229;
+  box-shadow: 0 0 0 3px rgba(30, 34, 41, 0.08);
 }
 
 .pf-input::placeholder {
-  color: #444757;
+  color: #98a2b3;
 }
 
 .pf-btn-activate {
-  background: #252834;
-  border: 1px solid #333847;
-  color: #f1f3f8;
-  border-radius: 8px;
+  background: #1e2229;
+  border: 1px solid #1e2229;
+  color: #ffffff;
+  padding: 9px 16px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
-  padding: 0 18px;
   cursor: pointer;
   transition: all 0.18s ease;
+  white-space: nowrap;
 }
 
 .pf-btn-activate:hover {
-  background: #303444;
-  border-color: #454a5e;
+  background: #2d323d;
+  border-color: #2d323d;
 }
 
+/* Launcher Card */
 .pf-card-launcher {
   display: flex;
   flex-direction: column;
@@ -2084,12 +2203,12 @@ html[data-theme="light"] .mh-btn-white-sm {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin: 16px 0 24px;
+  margin-bottom: 24px;
 }
 
 .pf-spec-item {
-  background: #171822;
-  border: 1px solid #232735;
+  background: #f8f9fb;
+  border: 1px solid #eaecf0;
   border-radius: 10px;
   padding: 10px 12px;
 }
@@ -2097,9 +2216,9 @@ html[data-theme="light"] .mh-btn-white-sm {
 .pf-spec-label {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: #7b8090;
+  gap: 6px;
+  font-size: 11px;
+  color: #7b8293;
   margin-bottom: 4px;
 }
 
@@ -2111,7 +2230,7 @@ html[data-theme="light"] .mh-btn-white-sm {
 .pf-spec-val {
   font-size: 13px;
   font-weight: 700;
-  color: #f1f3f8;
+  color: #16171b;
 }
 
 .pf-launcher-action {
@@ -2126,22 +2245,22 @@ html[data-theme="light"] .mh-btn-white-sm {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  height: 44px;
-  background: #252834;
-  border: 1px solid #333847;
-  color: #f1f3f8;
+  background: #1e2229;
+  border: 1px solid #1e2229;
+  color: #ffffff;
+  padding: 11px 18px;
   border-radius: 10px;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  text-decoration: none;
+  width: 100%;
   transition: all 0.18s ease;
+  box-shadow: 0 2px 8px rgba(30, 34, 41, 0.12);
 }
 
 .pf-btn-download:hover {
-  background: #303444;
-  border-color: #454a5e;
+  background: #2d323d;
+  border-color: #2d323d;
 }
 
 .pf-btn-download svg {
@@ -2152,26 +2271,26 @@ html[data-theme="light"] .mh-btn-white-sm {
 .pf-trouble-note {
   text-align: center;
   font-size: 12px;
-  color: #5c6171;
+  color: #7b8293;
 }
 
 .pf-trouble-note a {
-  color: #8b90a0;
+  color: #344054;
   text-decoration: none;
+  font-weight: 500;
 }
 
 .pf-trouble-note a:hover {
   text-decoration: underline;
-  color: #f1f3f8;
+  color: #16171b;
 }
 
 .pf-modal-desc {
   font-size: 13px;
-  color: #7b8090;
-  margin-top: 4px;
+  color: #5a6072;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 960px) {
   .pf-layout {
     flex-direction: column;
   }
@@ -2185,4 +2304,3 @@ html[data-theme="light"] .mh-btn-white-sm {
     grid-template-columns: 1fr;
   }
 }
-

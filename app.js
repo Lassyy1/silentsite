@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 let currentView = 'landing';
 
 function initSpaRouter() {
+  window.switchSilentView = switchView;
   const landingView = document.getElementById('landingView');
   const profileView = document.getElementById('profileView');
   const brandHomeLink = document.getElementById('brandHomeLink');
@@ -31,12 +32,11 @@ function initSpaRouter() {
     if (targetView === currentView) return;
 
     if (targetView === 'profile') {
-      // Fade out landing
+      document.body.classList.add('in-profile');
       landingView.classList.remove('active');
       setTimeout(() => {
         landingView.style.display = 'none';
         profileView.style.display = 'block';
-        // Force reflow
         void profileView.offsetWidth;
         profileView.classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -47,12 +47,11 @@ function initSpaRouter() {
         loadUserProfileData();
       }, 150);
     } else {
-      // Fade out profile
+      document.body.classList.remove('in-profile');
       profileView.classList.remove('active');
       setTimeout(() => {
         profileView.style.display = 'none';
         landingView.style.display = 'block';
-        // Force reflow
         void landingView.offsetWidth;
         landingView.classList.add('active');
         currentView = 'landing';
@@ -593,10 +592,21 @@ function initGuiPills() {
 // ==========================================================================
 function initPlanTabs() {
   const tabs = document.querySelectorAll('.cv-tab');
+  const standardGrid = document.getElementById('pricingStandardGrid');
+  const addonsGrid = document.getElementById('pricingAddonsGrid');
+
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
+      const tabName = tab.getAttribute('data-tab');
+      if (tabName === 'addons') {
+        if (standardGrid) standardGrid.style.display = 'none';
+        if (addonsGrid) addonsGrid.style.display = 'flex';
+      } else {
+        if (standardGrid) standardGrid.style.display = 'grid';
+        if (addonsGrid) addonsGrid.style.display = 'none';
+      }
     });
   });
 }
