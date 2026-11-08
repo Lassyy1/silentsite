@@ -19,7 +19,7 @@
       document.documentElement.setAttribute('data-theme', saved);
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=2.7">
+  <link rel="stylesheet" href="style.css?v=2.8">
 </head>
 <body>
 
@@ -497,9 +497,14 @@
           <!-- Sidebar Navigation -->
           <div class="pf-menu-section-label">Account</div>
           <nav class="pf-menu-list">
-            <button type="button" class="pf-menu-item active">
+            <button type="button" class="pf-menu-item active" id="sidebarSettingsBtn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
               <span>Settings</span>
+            </button>
+            
+            <button type="button" class="pf-menu-item" id="sidebarAdminBtn" style="display: none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>Admin Panel</span>
             </button>
             
             <button type="button" class="pf-menu-item" id="sidebarHelpBtn">
@@ -527,7 +532,7 @@
         </aside>
 
         <!-- Right Main Content -->
-        <section class="pf-main">
+        <section class="pf-main" id="pfSettingsSection">
           
           <!-- Card 1: Account Details -->
           <div class="pf-card">
@@ -672,6 +677,88 @@
 
         </section>
 
+        <!-- Admin Control Panel Section -->
+        <section class="pf-main" id="pfAdminSection" style="display: none;">
+          
+          <!-- Admin Header Card -->
+          <div class="pf-card">
+            <div class="pf-card-header">
+              <div class="pf-card-title-row">
+                <svg class="pf-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <h2 class="pf-card-title">Silent Admin Panel</h2>
+              </div>
+              <p class="pf-card-subtitle">Управление лицензионными ключами и базой пользователей</p>
+            </div>
+
+            <!-- Generator Block -->
+            <div class="pf-admin-generator">
+              <h3 class="pf-admin-subtitle">Генератор лицензионных ключей</h3>
+              <div class="pf-admin-form-row">
+                <div class="pf-admin-field">
+                  <label>Тариф:</label>
+                  <select id="adminKeyPlan" class="pf-admin-select">
+                    <option value="30 Days|30">30 Days (30 дней)</option>
+                    <option value="360 Days|360">360 Days (360 дней)</option>
+                    <option value="Lifetime Premium|9999">Lifetime Premium (Навсегда)</option>
+                  </select>
+                </div>
+
+                <div class="pf-admin-field">
+                  <label>Количество:</label>
+                  <select id="adminKeyCount" class="pf-admin-select">
+                    <option value="1">1 ключ</option>
+                    <option value="5">5 ключей</option>
+                    <option value="10">10 ключей</option>
+                  </select>
+                </div>
+
+                <button type="button" class="pf-btn-admin-action" id="adminGenKeysBtn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                  Сгенерировать
+                </button>
+              </div>
+
+              <!-- Output Box for Generated Keys -->
+              <div id="adminGenKeysOutput" style="display: none; margin-top: 14px;">
+                <label style="font-size: 12px; font-weight: 600; color: #8890a6; margin-bottom: 6px; display: block;">Сгенерированные ключи (нажмите чтобы скопировать):</label>
+                <div id="adminKeysList" class="pf-admin-keys-box"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Users Database Card -->
+          <div class="pf-card" style="margin-top: 20px;">
+            <div class="pf-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h3 class="pf-card-title" style="font-size: 16px;">Список пользователей</h3>
+                <p class="pf-card-subtitle">Все зарегистрированные аккаунты в базе данных</p>
+              </div>
+              <button type="button" class="pf-btn-secondary" id="adminRefreshUsersBtn" style="padding: 6px 12px; font-size: 13px;">
+                Обновить
+              </button>
+            </div>
+
+            <div class="pf-admin-table-wrapper">
+              <table class="pf-admin-table">
+                <thead>
+                  <tr>
+                    <th>UID</th>
+                    <th>Никнейм</th>
+                    <th>Подписка</th>
+                    <th>HWID</th>
+                    <th>Действие</th>
+                  </tr>
+                </thead>
+                <tbody id="adminUsersTableBody">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: #8890a6; padding: 20px;">Загрузка пользователей...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
       </div>
     </main>
   </div><!-- /#profileView -->
@@ -803,6 +890,6 @@
   </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7"></script>
+  <script src="app.js?v=2.8"></script>
 </body>
 </html>

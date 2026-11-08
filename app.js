@@ -392,6 +392,8 @@ async function loadUserProfileData() {
   let hwid = 'Not Linked';
   let activeSub = 'Free';
   let subExpiry = null;
+  let uid = 1;
+  let role = 'user';
 
   try {
     const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
@@ -401,6 +403,8 @@ async function loadUserProfileData() {
       if (profile.active_sub) activeSub = profile.active_sub;
       if (profile.sub_expiry) subExpiry = new Date(profile.sub_expiry);
       if (profile.created_at) regDate = new Date(profile.created_at).toLocaleDateString('ru-RU');
+      if (profile.uid !== undefined && profile.uid !== null) uid = profile.uid;
+      if (profile.role) role = profile.role;
     }
   } catch (err) {
     console.warn('Profile fetch note:', err);
@@ -409,21 +413,39 @@ async function loadUserProfileData() {
   const welcomeEl = document.getElementById('welcomeUserName');
   const cardNameEl = document.getElementById('cardUserName');
   const cardIdEl = document.getElementById('cardUserId');
+  const cardRoleEl = document.getElementById('cardRole');
   const emailEl = document.getElementById('userEmailVal');
   const regDateEl = document.getElementById('userRegDateVal');
   const hwidEl = document.getElementById('hwidText');
   const daysText = document.getElementById('daysLeftText');
   const statusDesc = document.getElementById('statusDescText');
   const navUserLabel = document.getElementById('userNameLabel');
+  const sidebarAdminBtn = document.getElementById('sidebarAdminBtn');
 
   if (welcomeEl) welcomeEl.textContent = username;
   if (cardNameEl) cardNameEl.textContent = username;
   if (navUserLabel) navUserLabel.textContent = username;
-  if (cardIdEl) cardIdEl.textContent = 'UID: ' + user.id.slice(0, 8);
+  if (cardIdEl) cardIdEl.textContent = 'User ID: ' + uid;
   if (emailEl) emailEl.textContent = email;
   if (regDateEl) regDateEl.textContent = regDate;
   if (hwidEl) hwidEl.textContent = hwid;
 
+  // Role badge and Admin navigation
+  if (role === 'admin') {
+    if (cardRoleEl) {
+      cardRoleEl.textContent = 'Admin';
+      cardRoleEl.className = 'pf-badge-admin';
+    }
+    if (sidebarAdminBtn) sidebarAdminBtn.style.display = 'flex';
+  } else {
+    if (cardRoleEl) {
+      cardRoleEl.textContent = 'Default';
+      cardRoleEl.className = 'pf-badge-default';
+    }
+    if (sidebarAdminBtn) sidebarAdminBtn.style.display = 'none';
+  }
+
+  // Compute days left
   if (activeSub && activeSub !== 'Free' && subExpiry) {
     const diffMs = subExpiry.getTime() - Date.now();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
@@ -442,6 +464,71 @@ async function loadUserProfileData() {
     if (statusDesc) statusDesc.textContent = 'Нет активной подписки';
   }
 }
+
+// Admin Panel Functions
+async function adminLoadUsers() {
+  const tableBody = document.getElementById('adminUsersTableBody');
+  if (!tableBody) return;
+
+  const sb = getSupabase();
+  if (!sb) return;
+
+  tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #8890a6; padding: 20px;">Загрузка пользователей...</td></tr>';
+
+  try {
+    const { data: users, error } = await sb.rpc('admin_get_all_users');
+    if (error) {
+      tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444; padding: 20px;">Ошибка доступа: ${error.message}</td></tr>`;
+      return;
+    }
+
+    if (!users || users.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #8890a6; padding: 20px;">Пользователи не найдены</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = users.map(u => {
+      const isSub = u.active_sub && u.active_sub !== 'Free';
+      const badgeCls = isSub ? 'pf-admin-badge-sub' : 'pf-admin-badge-sub free';
+      const subLabel = isSub ? u.active_sub : 'Free';
+      const hwidLabel = u.hwid || 'Not linked';
+
+      return `
+        <tr>
+          <td style="font-weight: 700;">#${u.uid || 1}</td>
+          <td><strong>${u.username || 'User'}</strong> ${u.role === 'admin' ? '<span class="pf-badge-admin" style="font-size:9px; padding:1px 4px;">Admin</span>' : ''}</td>
+          <td><span class="${badgeCls}">${subLabel}</span></td>
+          <td><span class="pf-admin-hwid-val">${hwidLabel}</span></td>
+          <td>
+            <button type="button" class="pf-admin-btn-action" onclick="adminResetUserHwid(${u.uid})">
+              Сбросить HWID
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444; padding: 20px;">Ошибка: ${err.message}</td></tr>`;
+  }
+}
+
+window.adminResetUserHwid = async function(targetUid) {
+  if (!confirm(`Сбросить HWID для пользователя UID #${targetUid}?`)) return;
+  const sb = getSupabase();
+  if (!sb) return;
+
+  try {
+    const { error } = await sb.rpc('admin_reset_user_hwid', { target_uid: targetUid });
+    if (error) {
+      alert('Ошибка: ' + error.message);
+      return;
+    }
+    alert(`HWID для UID #${targetUid} успешно сброшен!`);
+    adminLoadUsers();
+  } catch (err) {
+    alert('Ошибка: ' + err.message);
+  }
+};
 
 function initProfileDashboard() {
   const logoutBtn = document.getElementById('profileLogoutBtn');
@@ -482,6 +569,85 @@ function initProfileDashboard() {
     });
   }
 
+  // Profile sidebar tab switching: Settings vs Admin Panel
+  const sidebarSettingsBtn = document.getElementById('sidebarSettingsBtn');
+  const sidebarAdminBtn = document.getElementById('sidebarAdminBtn');
+  const pfSettingsSection = document.getElementById('pfSettingsSection');
+  const pfAdminSection = document.getElementById('pfAdminSection');
+
+  if (sidebarSettingsBtn && sidebarAdminBtn && pfSettingsSection && pfAdminSection) {
+    sidebarSettingsBtn.addEventListener('click', () => {
+      sidebarSettingsBtn.classList.add('active');
+      sidebarAdminBtn.classList.remove('active');
+      pfSettingsSection.style.display = 'block';
+      pfAdminSection.style.display = 'none';
+    });
+
+    sidebarAdminBtn.addEventListener('click', () => {
+      sidebarAdminBtn.classList.add('active');
+      sidebarSettingsBtn.classList.remove('active');
+      pfSettingsSection.style.display = 'none';
+      pfAdminSection.style.display = 'block';
+      adminLoadUsers();
+    });
+  }
+
+  // Admin Generate Keys
+  const adminGenKeysBtn = document.getElementById('adminGenKeysBtn');
+  if (adminGenKeysBtn) {
+    adminGenKeysBtn.addEventListener('click', async () => {
+      const planVal = document.getElementById('adminKeyPlan')?.value || '30 Days|30';
+      const countVal = parseInt(document.getElementById('adminKeyCount')?.value || '1', 10);
+      const [planName, durationStr] = planVal.split('|');
+      const durationDays = parseInt(durationStr, 10);
+
+      const sb = getSupabase();
+      if (!sb) return;
+
+      adminGenKeysBtn.disabled = true;
+      adminGenKeysBtn.textContent = 'Генерация...';
+
+      try {
+        const { data, error } = await sb.rpc('admin_generate_keys', {
+          p_plan: planName,
+          p_days: durationDays,
+          p_count: countVal
+        });
+
+        if (error) {
+          alert('Ошибка генерации ключей: ' + error.message);
+          return;
+        }
+
+        const outBox = document.getElementById('adminGenKeysOutput');
+        const listEl = document.getElementById('adminKeysList');
+        if (outBox && listEl && data) {
+          outBox.style.display = 'block';
+          listEl.innerHTML = data.map(item => `
+            <div class="pf-key-item">
+              <span>${item.key_code}</span>
+              <button type="button" onclick="navigator.clipboard.writeText('${item.key_code}'); this.textContent='Скопировано!'; setTimeout(()=>this.textContent='Копировать', 1500);">
+                Копировать
+              </button>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      } finally {
+        adminGenKeysBtn.disabled = false;
+        adminGenKeysBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Сгенерировать';
+      }
+    });
+  }
+
+  // Admin Refresh Users
+  const adminRefreshUsersBtn = document.getElementById('adminRefreshUsersBtn');
+  if (adminRefreshUsersBtn) {
+    adminRefreshUsersBtn.addEventListener('click', () => adminLoadUsers());
+  }
+
+  // Modals: Change Password
   const passModal = document.getElementById('changePassModal');
   const openPassBtn = document.getElementById('openChangePassBtn');
   const closePassBtn = document.getElementById('closePassModalBtn');
@@ -510,6 +676,7 @@ function initProfileDashboard() {
     });
   }
 
+  // Modals: Change Email
   const emailModal = document.getElementById('changeEmailModal');
   const openEmailBtn = document.getElementById('openChangeEmailBtn');
   const closeEmailBtn = document.getElementById('closeEmailModalBtn');
@@ -540,6 +707,7 @@ function initProfileDashboard() {
     });
   }
 
+  // License Key Activation
   const licenseForm = document.getElementById('licenseForm');
   if (licenseForm) {
     licenseForm.addEventListener('submit', async (e) => {
@@ -568,6 +736,7 @@ function initProfileDashboard() {
     });
   }
 
+  // Download launcher demo
   const dlBtn = document.getElementById('downloadLauncherBtn');
   if (dlBtn) {
     dlBtn.addEventListener('click', () => {
