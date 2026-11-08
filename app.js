@@ -301,16 +301,13 @@ function initAuthSystem() {
 
       let email = userOrEmail;
       if (!email.includes('@')) {
-        // Look up email by username
         try {
-          const { data: p } = await sb.from('profiles').select('email').eq('username', userOrEmail).single();
-          if (p && p.email) {
-            email = p.email;
-          } else {
-            email = `${userOrEmail.toLowerCase()}@silent.client`;
+          const { data: foundEmail, error: rpcErr } = await sb.rpc('get_email_by_username', { p_username: userOrEmail });
+          if (foundEmail) {
+            email = foundEmail;
           }
-        } catch (_) {
-          email = `${userOrEmail.toLowerCase()}@silent.client`;
+        } catch (err) {
+          console.warn('Username lookup notice:', err);
         }
       }
 
@@ -405,6 +402,13 @@ async function loadUserProfileData() {
       if (profile.created_at) regDate = new Date(profile.created_at).toLocaleDateString('ru-RU');
       if (profile.uid !== undefined && profile.uid !== null) uid = profile.uid;
       if (profile.role) role = profile.role;
+
+      if (profile.is_banned) {
+        alert('Ваш аккаунт заблокирован администратором.');
+        await sb.auth.signOut();
+        if (window.switchSilentView) window.switchSilentView('landing');
+        return;
+      }
     }
   } catch (err) {
     console.warn('Profile fetch note:', err);
@@ -465,6 +469,78 @@ async function loadUserProfileData() {
   }
 }
 
+
+// Admin Keys Management Functions
+let lastGeneratedKeys = [];
+
+async function adminLoadKeys(filter = 'active') {
+  const tableBody = document.getElementById('adminKeysTableBody');
+  if (!tableBody) return;
+
+  const sb = getSupabase();
+  if (!sb) return;
+
+  tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #8890a6; padding: 20px;">Загрузка ключей...</td></tr>';
+
+  try {
+    const { data: keys, error } = await sb.rpc('admin_get_keys', { p_filter: filter });
+    if (error) {
+      tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444; padding: 20px;">Ошибка доступа: ${error.message}</td></tr>`;
+      return;
+    }
+
+    if (!keys || keys.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #8890a6; padding: 20px;">Ключи не найдены</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = keys.map(k => {
+      const isUsed = !!k.is_used;
+      const statusHtml = isUsed
+        ? '<span style="color:#ef4444; font-weight:600; font-size:11px; padding:2px 6px; background:rgba(239,68,68,0.15); border-radius:4px;">Активирован</span>'
+        : '<span style="color:#10b981; font-weight:700; font-size:11px; padding:2px 6px; background:rgba(16,185,129,0.15); border-radius:4px;">Свободен</span>';
+      
+      const usedBy = k.used_by_username ? `<strong>${k.used_by_username}</strong>` : '<span style="color:#72798e;">—</span>';
+
+      return `
+        <tr>
+          <td style="font-family:monospace; font-weight:700; font-size:12px; letter-spacing:0.02em;">
+            ${k.key}
+            <button type="button" style="margin-left:6px; padding:2px 6px; font-size:10px; cursor:pointer;" onclick="navigator.clipboard.writeText('${k.key}'); this.textContent='OK'; setTimeout(()=>this.textContent='Копир.', 1200);">Копир.</button>
+          </td>
+          <td><span class="pf-admin-badge-sub">${k.plan_name}</span></td>
+          <td>${statusHtml}</td>
+          <td>${usedBy}</td>
+          <td>
+            ${!isUsed ? `<button type="button" class="pf-admin-btn-action" style="color:#ef4444; border-color:#ef4444;" onclick="adminDeleteKey('${k.key}')">Удалить</button>` : '<span style="color:#72798e; font-size:11px;">Использован</span>'}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444; padding: 20px;">Ошибка: ${err.message}</td></tr>`;
+  }
+}
+
+window.adminDeleteKey = async function(keyCode) {
+  if (!confirm(`Удалить ключ ${keyCode}?`)) return;
+  const sb = getSupabase();
+  if (!sb) return;
+
+  try {
+    const { error } = await sb.rpc('admin_delete_key', { p_key: keyCode });
+    if (error) {
+      alert('Ошибка: ' + error.message);
+      return;
+    }
+    alert('Ключ успешно удален!');
+    const filter = document.getElementById('adminKeysFilterSelect')?.value || 'active';
+    adminLoadKeys(filter);
+  } catch (err) {
+    alert('Ошибка: ' + err.message);
+  }
+};
+
 // Admin Panel Functions
 async function adminLoadUsers() {
   const tableBody = document.getElementById('adminUsersTableBody');
@@ -473,17 +549,17 @@ async function adminLoadUsers() {
   const sb = getSupabase();
   if (!sb) return;
 
-  tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #8890a6; padding: 20px;">Загрузка пользователей...</td></tr>';
+  tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #8890a6; padding: 20px;">Загрузка пользователей...</td></tr>';
 
   try {
     const { data: users, error } = await sb.rpc('admin_get_all_users');
     if (error) {
-      tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444; padding: 20px;">Ошибка доступа: ${error.message}</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #ef4444; padding: 20px;">Ошибка доступа: ${error.message}</td></tr>`;
       return;
     }
 
     if (!users || users.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #8890a6; padding: 20px;">Пользователи не найдены</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #8890a6; padding: 20px;">Пользователи не найдены</td></tr>';
       return;
     }
 
@@ -492,6 +568,10 @@ async function adminLoadUsers() {
       const badgeCls = isSub ? 'pf-admin-badge-sub' : 'pf-admin-badge-sub free';
       const subLabel = isSub ? u.active_sub : 'Free';
       const hwidLabel = u.hwid || 'Not linked';
+      const isBanned = !!u.is_banned;
+      const statusHtml = isBanned 
+        ? '<span style="color:#ef4444; font-weight:700; font-size:11px; padding:2px 6px; background:rgba(239,68,68,0.15); border-radius:4px;">BANNED</span>'
+        : '<span style="color:#10b981; font-weight:600; font-size:11px;">Active</span>';
 
       return `
         <tr>
@@ -499,16 +579,24 @@ async function adminLoadUsers() {
           <td><strong>${u.username || 'User'}</strong> ${u.role === 'admin' ? '<span class="pf-badge-admin" style="font-size:9px; padding:1px 4px;">Admin</span>' : ''}</td>
           <td><span class="${badgeCls}">${subLabel}</span></td>
           <td><span class="pf-admin-hwid-val">${hwidLabel}</span></td>
+          <td>${statusHtml}</td>
           <td>
-            <button type="button" class="pf-admin-btn-action" onclick="adminResetUserHwid(${u.uid})">
-              Сбросить HWID
-            </button>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="pf-admin-btn-action" onclick="adminResetUserHwid(${u.uid})" title="Сбросить привязку HWID">
+                Сброс HWID
+              </button>
+              ${isSub ? `<button type="button" class="pf-admin-btn-action" style="color:#eab308; border-color:rgba(234,179,8,0.4);" onclick="adminRemoveUserSub(${u.uid})" title="Снять подписку">Снять подписку</button>` : ''}
+              <button type="button" class="pf-admin-btn-action" style="${isBanned ? 'color:#10b981; border-color:#10b981;' : 'color:#ef4444; border-color:#ef4444;'}" onclick="adminToggleBanUser(${u.uid}, ${!isBanned})" title="${isBanned ? 'Разблокировать' : 'Заблокировать'}">
+                ${isBanned ? 'Разбан' : 'Бан'}
+              </button>
+              ${u.role !== 'admin' ? `<button type="button" class="pf-admin-btn-action" style="background:#dc2626; color:#ffffff; border-color:#dc2626;" onclick="adminDeleteUser(${u.uid})" title="Удалить аккаунт навсегда">Удалить</button>` : ''}
+            </div>
           </td>
         </tr>
       `;
     }).join('');
   } catch (err) {
-    tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444; padding: 20px;">Ошибка: ${err.message}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #ef4444; padding: 20px;">Ошибка: ${err.message}</td></tr>`;
   }
 }
 
@@ -524,6 +612,61 @@ window.adminResetUserHwid = async function(targetUid) {
       return;
     }
     alert(`HWID для UID #${targetUid} успешно сброшен!`);
+    adminLoadUsers();
+  } catch (err) {
+    alert('Ошибка: ' + err.message);
+  }
+};
+
+window.adminRemoveUserSub = async function(targetUid) {
+  if (!confirm(`Снять подписку у пользователя UID #${targetUid}?`)) return;
+  const sb = getSupabase();
+  if (!sb) return;
+
+  try {
+    const { error } = await sb.rpc('admin_remove_user_sub', { target_uid: targetUid });
+    if (error) {
+      alert('Ошибка: ' + error.message);
+      return;
+    }
+    alert(`Подписка для UID #${targetUid} аннулирована!`);
+    adminLoadUsers();
+  } catch (err) {
+    alert('Ошибка: ' + err.message);
+  }
+};
+
+window.adminToggleBanUser = async function(targetUid, banState) {
+  const actionText = banState ? 'заблокировать' : 'разблокировать';
+  if (!confirm(`Вы действительно хотите ${actionText} аккаунт UID #${targetUid}?`)) return;
+  const sb = getSupabase();
+  if (!sb) return;
+
+  try {
+    const { error } = await sb.rpc('admin_toggle_ban_user', { target_uid: targetUid, ban_state: banState });
+    if (error) {
+      alert('Ошибка: ' + error.message);
+      return;
+    }
+    alert(`Аккаунт UID #${targetUid} успешно ${banState ? 'заблокирован' : 'разблокирован'}!`);
+    adminLoadUsers();
+  } catch (err) {
+    alert('Ошибка: ' + err.message);
+  }
+};
+
+window.adminDeleteUser = async function(targetUid) {
+  if (!confirm(`ВНИМАНИЕ: Удалить аккаунт UID #${targetUid} НАВСЕГДА из базы данных?`)) return;
+  const sb = getSupabase();
+  if (!sb) return;
+
+  try {
+    const { error } = await sb.rpc('admin_delete_user', { target_uid: targetUid });
+    if (error) {
+      alert('Ошибка удаления: ' + error.message);
+      return;
+    }
+    alert(`Пользователь UID #${targetUid} удален навсегда!`);
     adminLoadUsers();
   } catch (err) {
     alert('Ошибка: ' + err.message);
@@ -589,6 +732,7 @@ function initProfileDashboard() {
       pfSettingsSection.style.display = 'none';
       pfAdminSection.style.display = 'block';
       adminLoadUsers();
+      adminLoadKeys();
     });
   }
 
@@ -619,6 +763,7 @@ function initProfileDashboard() {
           return;
         }
 
+        lastGeneratedKeys = data ? data.map(d => d.key_code) : [];
         const outBox = document.getElementById('adminGenKeysOutput');
         const listEl = document.getElementById('adminKeysList');
         if (outBox && listEl && data) {
@@ -632,12 +777,47 @@ function initProfileDashboard() {
             </div>
           `).join('');
         }
+        const filter = document.getElementById('adminKeysFilterSelect')?.value || 'active';
+        adminLoadKeys(filter);
       } catch (err) {
         alert('Ошибка: ' + err.message);
       } finally {
         adminGenKeysBtn.disabled = false;
         adminGenKeysBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Сгенерировать';
       }
+    });
+  }
+
+  // Admin Copy All Generated Keys
+  const copyAllBtn = document.getElementById('adminCopyAllKeysBtn');
+  if (copyAllBtn) {
+    copyAllBtn.addEventListener('click', () => {
+      if (!lastGeneratedKeys || lastGeneratedKeys.length === 0) {
+        alert('Нет сгенерированных ключей для копирования');
+        return;
+      }
+      const textToCopy = lastGeneratedKeys.join('\n');
+      navigator.clipboard.writeText(textToCopy);
+      copyAllBtn.textContent = `Скопировано (${lastGeneratedKeys.length} шт.)!`;
+      setTimeout(() => {
+        copyAllBtn.textContent = 'Скопировать все списком для FunPay';
+      }, 2000);
+    });
+  }
+
+  // Admin Keys Database Filter & Refresh
+  const keysFilterSelect = document.getElementById('adminKeysFilterSelect');
+  if (keysFilterSelect) {
+    keysFilterSelect.addEventListener('change', () => {
+      adminLoadKeys(keysFilterSelect.value);
+    });
+  }
+
+  const refreshKeysBtn = document.getElementById('adminRefreshKeysBtn');
+  if (refreshKeysBtn) {
+    refreshKeysBtn.addEventListener('click', () => {
+      const f = keysFilterSelect ? keysFilterSelect.value : 'active';
+      adminLoadKeys(f);
     });
   }
 

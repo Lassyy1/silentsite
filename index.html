@@ -19,7 +19,7 @@
       document.documentElement.setAttribute('data-theme', saved);
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=2.8">
+  <link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body>
 
@@ -709,6 +709,9 @@
                     <option value="1">1 ключ</option>
                     <option value="5">5 ключей</option>
                     <option value="10">10 ключей</option>
+                    <option value="25">25 ключей</option>
+                    <option value="50">50 ключей</option>
+                    <option value="100">100 ключей (пачка)</option>
                   </select>
                 </div>
 
@@ -720,9 +723,53 @@
 
               <!-- Output Box for Generated Keys -->
               <div id="adminGenKeysOutput" style="display: none; margin-top: 14px;">
-                <label style="font-size: 12px; font-weight: 600; color: #8890a6; margin-bottom: 6px; display: block;">Сгенерированные ключи (нажмите чтобы скопировать):</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <label style="font-size: 12px; font-weight: 600; color: #8890a6;">Сгенерированные ключи:</label>
+                  <button type="button" class="pf-btn-secondary" id="adminCopyAllKeysBtn" style="padding: 4px 10px; font-size: 12px;">
+                    Скопировать все списком для FunPay
+                  </button>
+                </div>
                 <div id="adminKeysList" class="pf-admin-keys-box"></div>
               </div>
+            </div>
+          </div>
+
+          <!-- Keys Database Card -->
+          <div class="pf-card" style="margin-top: 20px;">
+            <div class="pf-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 class="pf-card-title" style="font-size: 16px;">База лицензионных ключей</h3>
+                <p class="pf-card-subtitle">Все созданные ключи в базе данных</p>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <select id="adminKeysFilterSelect" class="pf-admin-select" style="height: 32px; font-size: 12px; padding: 0 8px;">
+                  <option value="all">Все ключи</option>
+                  <option value="active" selected>Только свободные (для продажи)</option>
+                  <option value="used">Только активированные</option>
+                </select>
+                <button type="button" class="pf-btn-secondary" id="adminRefreshKeysBtn" style="padding: 4px 12px; font-size: 12px;">
+                  Обновить
+                </button>
+              </div>
+            </div>
+
+            <div class="pf-admin-table-wrapper">
+              <table class="pf-admin-table">
+                <thead>
+                  <tr>
+                    <th>Лицензионный ключ</th>
+                    <th>Тариф</th>
+                    <th>Статус</th>
+                    <th>Кем активирован</th>
+                    <th>Действие</th>
+                  </tr>
+                </thead>
+                <tbody id="adminKeysTableBody">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: #8890a6; padding: 20px;">Загрузка ключей...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -746,12 +793,13 @@
                     <th>Никнейм</th>
                     <th>Подписка</th>
                     <th>HWID</th>
-                    <th>Действие</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody id="adminUsersTableBody">
                   <tr>
-                    <td colspan="5" style="text-align: center; color: #8890a6; padding: 20px;">Загрузка пользователей...</td>
+                    <td colspan="6" style="text-align: center; color: #8890a6; padding: 20px;">Загрузка пользователей...</td>
                   </tr>
                 </tbody>
               </table>
@@ -890,6 +938,6 @@
   </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.8"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 </html>
