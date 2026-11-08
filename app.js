@@ -1,15 +1,34 @@
 
 // ==========================================================================
+// SUPABASE CLIENT INITIALIZATION
+// ==========================================================================
+const SUPABASE_URL = 'https://zqbfnscycruydgeiexmp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_4nzCvZvgErwyrIyDiRRJ1A_zAS14etW';
+
+let supabaseClient = null;
+function getSupabase() {
+  if (!supabaseClient && window.supabase) {
+    try {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch (e) {
+      console.warn('Supabase init notice:', e);
+    }
+  }
+  return supabaseClient;
+}
+
+
+// ==========================================================================
 // 0. THEME SWITCHER (Light / Dark)
 // ==========================================================================
 function initThemeToggle() {
   const toggleBtn = document.getElementById('themeToggleBtn');
-  const savedTheme = localStorage.getItem('silent_theme') || 'light';
+  const savedTheme = localStorage.getItem('silent_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
 
   if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
       const nextTheme = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', nextTheme);
       localStorage.setItem('silent_theme', nextTheme);
@@ -174,36 +193,54 @@ function initAuthSystem() {
   const userBadge = document.getElementById('authUserBadge');
   const userNameLabel = document.getElementById('userNameLabel');
 
-  // Check saved session (default to Lassyy2 / User 0 if not logged out)
-  const savedUser = localStorage.getItem('silent-user');
-  if (savedUser && savedUser !== 'guest') {
-    setLoggedInState(savedUser);
-  } else if (savedUser === null) {
-    // Initial visit: default to founder account Lassyy2
-    setLoggedInState('Lassyy2');
-  } else {
-    // Guest state
-    if (guestState) guestState.style.display = 'flex';
-    if (userBadge) userBadge.style.display = 'none';
-  }
-
   function setLoggedInState(nick) {
     if (userNameLabel) userNameLabel.textContent = nick;
     if (guestState) guestState.style.display = 'none';
     if (userBadge) userBadge.style.display = 'block';
-    localStorage.setItem('silent-user', nick);
   }
 
-  function switchAuthTab(target) {
+  function setLoggedOutState() {
+    if (guestState) guestState.style.display = 'flex';
+    if (userBadge) userBadge.style.display = 'none';
+  }
+
+  // Check Supabase session on startup
+  const sb = getSupabase();
+  if (sb) {
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session && session.user) {
+        const nick = session.user.user_metadata?.username || session.user.email.split('@')[0];
+        setLoggedInState(nick);
+        loadUserProfileData();
+      } else {
+        setLoggedOutState();
+      }
+    });
+
+    sb.auth.onAuthStateChange((event, session) => {
+      if (session && session.user) {
+        const nick = session.user.user_metadata?.username || session.user.email.split('@')[0];
+        setLoggedInState(nick);
+        loadUserProfileData();
+      } else {
+        setLoggedOutState();
+      }
+    });
+  } else {
+    // Fallback default state
+    setLoggedOutState();
+  }
+
+  // Switch tabs in modal
+  function switchAuthTab(targetTab) {
     authTabs.forEach(t => {
-      if (t.getAttribute('data-auth-tab') === target) {
+      if (t.getAttribute('data-auth-tab') === targetTab) {
         t.classList.add('active');
       } else {
         t.classList.remove('active');
       }
     });
-
-    if (target === 'login') {
+    if (targetTab === 'login') {
       if (loginForm) loginForm.style.display = 'block';
       if (registerForm) registerForm.style.display = 'none';
     } else {
@@ -212,9 +249,10 @@ function initAuthSystem() {
     }
   }
 
-  authTabs.forEach(t => {
-    t.addEventListener('click', () => {
-      switchAuthTab(t.getAttribute('data-auth-tab'));
+  authTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.getAttribute('data-auth-tab');
+      switchAuthTab(tabName);
     });
   });
 
@@ -246,190 +284,175 @@ function initAuthSystem() {
     });
   }
 
-  // Handle Login submission with Backend API
+  // Live Supabase Login
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const usernameInput = document.getElementById('loginUsername');
       const passwordInput = document.getElementById('loginPassword');
-      const username = usernameInput ? usernameInput.value.trim() : 'Lassyy2';
+      const userOrEmail = usernameInput ? usernameInput.value.trim() : '';
       const password = passwordInput ? passwordInput.value : '';
 
-      try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (data.ok) {
-          if (data.token) localStorage.setItem('silent-token', data.token);
-          setLoggedInState(data.user.username);
-          if (authModal) authModal.classList.remove('open');
-          
-          // Smoothly switch to profile
-          const landingView = document.getElementById('landingView');
-          const profileView = document.getElementById('profileView');
-          if (landingView && profileView) {
-            landingView.classList.remove('active');
-            setTimeout(() => {
-              landingView.style.display = 'none';
-              profileView.style.display = 'block';
-              void profileView.offsetWidth;
-              profileView.classList.add('active');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              history.pushState({ view: 'profile' }, '', '#profile');
-              loadUserProfileData();
-            }, 150);
+      const sb = getSupabase();
+      if (!sb) {
+        alert('Supabase клиент недоступен.');
+        return;
+      }
+
+      let email = userOrEmail;
+      if (!email.includes('@')) {
+        // Look up email by username
+        try {
+          const { data: p } = await sb.from('profiles').select('email').eq('username', userOrEmail).single();
+          if (p && p.email) {
+            email = p.email;
+          } else {
+            email = `${userOrEmail.toLowerCase()}@silent.client`;
           }
-        } else {
-          alert(data.error || 'Ошибка входа');
+        } catch (_) {
+          email = `${userOrEmail.toLowerCase()}@silent.client`;
         }
-      } catch (err) {
-        // Local fallback
-        setLoggedInState(username);
+      }
+
+      const { data, error } = await sb.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (error) {
+        alert('Ошибка входа: ' + (error.message || 'Неверный логин или пароль'));
+        return;
+      }
+
+      if (data && data.user) {
+        const nick = data.user.user_metadata?.username || userOrEmail;
+        setLoggedInState(nick);
         if (authModal) authModal.classList.remove('open');
+        if (window.switchSilentView) window.switchSilentView('profile');
+        loadUserProfileData();
       }
     });
   }
 
-  // Handle Register submission with Backend API
+  // Live Supabase Register
   if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const usernameInput = document.getElementById('regUsername');
       const emailInput = document.getElementById('regEmail');
       const passwordInput = document.getElementById('regPassword');
-      
-      const username = usernameInput ? usernameInput.value.trim() : 'Player';
-      const email = emailInput ? emailInput.value.trim() : `${username.toLowerCase()}@gmail.com`;
+
+      const username = usernameInput ? usernameInput.value.trim() : '';
+      let email = emailInput ? emailInput.value.trim() : '';
       const password = passwordInput ? passwordInput.value : '';
 
-      try {
-        const res = await fetch('/api/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, email, password })
-        });
-        const data = await res.json();
-        if (data.ok) {
-          if (data.token) localStorage.setItem('silent-token', data.token);
-          setLoggedInState(data.user.username);
-          if (authModal) authModal.classList.remove('open');
-          
-          // Switch to profile
-          const landingView = document.getElementById('landingView');
-          const profileView = document.getElementById('profileView');
-          if (landingView && profileView) {
-            landingView.classList.remove('active');
-            setTimeout(() => {
-              landingView.style.display = 'none';
-              profileView.style.display = 'block';
-              void profileView.offsetWidth;
-              profileView.classList.add('active');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              history.pushState({ view: 'profile' }, '', '#profile');
-              loadUserProfileData();
-            }, 150);
-          }
-        } else {
-          alert(data.error || 'Ошибка регистрации');
+      if (!email || !email.includes('@')) {
+        email = `${username.toLowerCase()}@silent.client`;
+      }
+
+      const sb = getSupabase();
+      if (!sb) {
+        alert('Supabase клиент недоступен.');
+        return;
+      }
+
+      const { data, error } = await sb.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: { username: username }
         }
-      } catch (err) {
+      });
+
+      if (error) {
+        alert('Ошибка регистрации: ' + error.message);
+        return;
+      }
+
+      if (data && data.user) {
         setLoggedInState(username);
         if (authModal) authModal.classList.remove('open');
+        if (window.switchSilentView) window.switchSilentView('profile');
+        loadUserProfileData();
       }
     });
   }
 }
 
-// ==========================================================================
-// 3. PROFILE DASHBOARD & LIVE DATA SYNC
-// ==========================================================================
 async function loadUserProfileData() {
-  const token = localStorage.getItem('silent-token');
+  const sb = getSupabase();
+  if (!sb) return;
+
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+
+  const email = user.email || '';
+  let username = user.user_metadata?.username || email.split('@')[0];
+  let regDate = user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : 'Today';
+  let hwid = 'Not Linked';
+  let activeSub = 'Free';
+  let subExpiry = null;
+
   try {
-    const res = await fetch('/api/me', {
-      headers: token ? { 'X-Session-Token': token } : {}
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.ok && data.user) {
-        renderUserData(data.user);
-      }
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    if (profile) {
+      if (profile.username) username = profile.username;
+      if (profile.hwid) hwid = profile.hwid;
+      if (profile.active_sub) activeSub = profile.active_sub;
+      if (profile.sub_expiry) subExpiry = new Date(profile.sub_expiry);
+      if (profile.created_at) regDate = new Date(profile.created_at).toLocaleDateString('ru-RU');
     }
-  } catch (e) {
-    // offline/fallback
-    const localNick = localStorage.getItem('silent-user') || 'Lassyy2';
-    renderUserData({
-      id: 0,
-      username: localNick,
-      email: 'baran@gmail.com',
-      registration_date: '07.11.2026',
-      hwid: null,
-      days_left: 0,
-      license_status: 'Inactive',
-      role: 'Default'
-    });
+  } catch (err) {
+    console.warn('Profile fetch note:', err);
   }
-}
 
-function renderUserData(u) {
-  const welcome = document.getElementById('welcomeUserName');
-  const cardName = document.getElementById('cardUserName');
-  const cardId = document.getElementById('cardUserId');
-  const emailVal = document.getElementById('userEmailVal');
-  const regVal = document.getElementById('userRegDateVal');
-  const hwidText = document.getElementById('hwidText');
+  const welcomeEl = document.getElementById('welcomeUserName');
+  const cardNameEl = document.getElementById('cardUserName');
+  const cardIdEl = document.getElementById('cardUserId');
+  const emailEl = document.getElementById('userEmailVal');
+  const regDateEl = document.getElementById('userRegDateVal');
+  const hwidEl = document.getElementById('hwidText');
   const daysText = document.getElementById('daysLeftText');
-  const statusBadge = document.getElementById('statusBadge');
   const statusDesc = document.getElementById('statusDescText');
+  const navUserLabel = document.getElementById('userNameLabel');
 
-  if (welcome) welcome.textContent = u.username;
-  if (cardName) cardName.textContent = u.username;
-  if (cardId) cardId.textContent = `User ID: ${u.id !== undefined ? u.id : 0}`;
-  if (emailVal) emailVal.textContent = u.email || 'baran@gmail.com';
-  if (regVal) regVal.textContent = u.registration_date || '07.11.2026';
-  
-  if (hwidText) {
-    hwidText.textContent = u.hwid ? 'Linked' : 'Not Linked';
-  }
+  if (welcomeEl) welcomeEl.textContent = username;
+  if (cardNameEl) cardNameEl.textContent = username;
+  if (navUserLabel) navUserLabel.textContent = username;
+  if (cardIdEl) cardIdEl.textContent = 'UID: ' + user.id.slice(0, 8);
+  if (emailEl) emailEl.textContent = email;
+  if (regDateEl) regDateEl.textContent = regDate;
+  if (hwidEl) hwidEl.textContent = hwid;
 
-  if (daysText) {
-    daysText.textContent = `${u.days_left || 0} Days Left`;
-  }
-
-  if (statusBadge) {
-    if (u.days_left > 0 || u.license_status === 'Active') {
-      statusBadge.innerHTML = '<span class="pf-dot green"></span> Active';
-      statusBadge.className = 'pf-pill-inactive active-green';
-      statusBadge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-      statusBadge.style.color = '#34d399';
+  if (activeSub && activeSub !== 'Free' && subExpiry) {
+    const diffMs = subExpiry.getTime() - Date.now();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays > 3000) {
+      if (daysText) daysText.textContent = 'Lifetime';
+      if (statusDesc) statusDesc.textContent = activeSub + ' (Бессрочно)';
+    } else if (diffDays > 0) {
+      if (daysText) daysText.textContent = diffDays + ' Days Left';
+      if (statusDesc) statusDesc.textContent = activeSub + ' активна';
     } else {
-      statusBadge.innerHTML = '<span class="pf-dot"></span> Inactive';
-      statusBadge.className = 'pf-pill-inactive';
-      statusBadge.style.borderColor = '#232532';
-      statusBadge.style.color = '#8b90a0';
+      if (daysText) daysText.textContent = '0 Days Left';
+      if (statusDesc) statusDesc.textContent = 'Подписка истекла';
     }
-  }
-
-  if (statusDesc) {
-    statusDesc.textContent = (u.days_left > 0) ? 'License active' : 'Not activated';
+  } else {
+    if (daysText) daysText.textContent = '0 Days Left';
+    if (statusDesc) statusDesc.textContent = 'Нет активной подписки';
   }
 }
 
 function initProfileDashboard() {
-  // Logout
   const logoutBtn = document.getElementById('profileLogoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
-      const token = localStorage.getItem('silent-token');
-      try {
-        await fetch('/api/logout', {
-          method: 'POST',
-          headers: token ? { 'X-Session-Token': token } : {}
-        });
-      } catch (e) {}
+      const sb = getSupabase();
+      if (sb) {
+        try {
+          await sb.auth.signOut();
+        } catch (_) {}
+      }
 
       localStorage.removeItem('silent-token');
       localStorage.setItem('silent-user', 'guest');
@@ -439,24 +462,26 @@ function initProfileDashboard() {
       if (guestState) guestState.style.display = 'flex';
       if (userBadge) userBadge.style.display = 'none';
 
-      // Switch back to landing
-      const landingView = document.getElementById('landingView');
-      const profileView = document.getElementById('profileView');
-      if (landingView && profileView) {
-        profileView.classList.remove('active');
-        setTimeout(() => {
-          profileView.style.display = 'none';
-          landingView.style.display = 'block';
-          void landingView.offsetWidth;
-          landingView.classList.add('active');
-          history.pushState({ view: 'landing' }, '', '#');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 150);
+      if (window.switchSilentView) {
+        window.switchSilentView('landing');
+      } else {
+        const landingView = document.getElementById('landingView');
+        const profileView = document.getElementById('profileView');
+        if (landingView && profileView) {
+          profileView.classList.remove('active');
+          setTimeout(() => {
+            profileView.style.display = 'none';
+            landingView.style.display = 'block';
+            void landingView.offsetWidth;
+            landingView.classList.add('active');
+            history.pushState({ view: 'landing' }, '', '#');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 150);
+        }
       }
     });
   }
 
-  // Modals: Change Password
   const passModal = document.getElementById('changePassModal');
   const openPassBtn = document.getElementById('openChangePassBtn');
   const closePassBtn = document.getElementById('closePassModalBtn');
@@ -472,27 +497,19 @@ function initProfileDashboard() {
     passForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const newPass = document.getElementById('newPassInput').value;
-      const token = localStorage.getItem('silent-token');
-      try {
-        const res = await fetch('/api/change-password', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'X-Session-Token': token } : {})
-          },
-          body: JSON.stringify({ new_password: newPass })
-        });
-        const d = await res.json();
-        alert(d.message || (d.ok ? 'Пароль успешно обновлен!' : d.error));
-        if (d.ok) passModal.classList.remove('open');
-      } catch (err) {
-        alert('Пароль успешно обновлен!');
-        passModal.classList.remove('open');
+      const sb = getSupabase();
+      if (sb) {
+        const { error } = await sb.auth.updateUser({ password: newPass });
+        if (error) {
+          alert('Ошибка обновления пароля: ' + error.message);
+          return;
+        }
       }
+      alert('Пароль успешно обновлен!');
+      if (passModal) passModal.classList.remove('open');
     });
   }
 
-  // Modals: Change Email
   const emailModal = document.getElementById('changeEmailModal');
   const openEmailBtn = document.getElementById('openChangeEmailBtn');
   const closeEmailBtn = document.getElementById('closeEmailModalBtn');
@@ -507,76 +524,50 @@ function initProfileDashboard() {
   if (emailForm) {
     emailForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const newMail = document.getElementById('newEmailInput').value;
-      const token = localStorage.getItem('silent-token');
-      try {
-        const res = await fetch('/api/change-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'X-Session-Token': token } : {})
-          },
-          body: JSON.stringify({ new_email: newMail })
-        });
-        const d = await res.json();
-        if (d.ok) {
-          const emailVal = document.getElementById('userEmailVal');
-          if (emailVal) emailVal.textContent = d.email;
-          alert('Email успешно сохранен!');
-          emailModal.classList.remove('open');
-        } else {
-          alert(d.error || 'Ошибка');
+      const newMail = document.getElementById('newEmailInput').value.trim();
+      const sb = getSupabase();
+      if (sb) {
+        const { error } = await sb.auth.updateUser({ email: newMail });
+        if (error) {
+          alert('Ошибка обновления Email: ' + error.message);
+          return;
         }
-      } catch (err) {
-        const emailVal = document.getElementById('userEmailVal');
-        if (emailVal) emailVal.textContent = newMail;
-        alert('Email успешно сохранен!');
-        emailModal.classList.remove('open');
       }
+      const emailVal = document.getElementById('userEmailVal');
+      if (emailVal) emailVal.textContent = newMail;
+      alert('Email успешно сохранен!');
+      if (emailModal) emailModal.classList.remove('open');
     });
   }
 
-  // License Key Activation
   const licenseForm = document.getElementById('licenseForm');
   if (licenseForm) {
     licenseForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const keyInput = document.getElementById('licenseKeyInput');
       const keyVal = keyInput ? keyInput.value.trim() : '';
-      const token = localStorage.getItem('silent-token');
+      if (!keyVal) return;
 
-      try {
-        const res = await fetch('/api/activate-key', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'X-Session-Token': token } : {})
-          },
-          body: JSON.stringify({ key: keyVal })
-        });
-        const d = await res.json();
-        if (d.ok) {
-          alert(`Лицензия успешно активирована! Всего дней: ${d.days_left}`);
-          loadUserProfileData();
+      const sb = getSupabase();
+      if (sb) {
+        const { data, error } = await sb.rpc('activate_license_key', { key_code: keyVal });
+        if (error) {
+          alert('Ошибка активации: ' + error.message);
+          return;
+        }
+        if (data && data.success) {
+          alert('Лицензия ' + data.plan + ' успешно активирована!');
           keyInput.value = '';
+          loadUserProfileData();
+          return;
         } else {
-          alert(d.error || 'Ошибка активации');
+          alert(data?.message || 'Неверный ключ');
+          return;
         }
-      } catch (err) {
-        const daysText = document.getElementById('daysLeftText');
-        const statusBadge = document.getElementById('statusBadge');
-        if (daysText) daysText.textContent = '360 Days Left';
-        if (statusBadge) {
-          statusBadge.innerHTML = '<span class="pf-dot green"></span> Active';
-          statusBadge.style.color = '#34d399';
-        }
-        alert('Лицензия активирована на 360 дней!');
-        keyInput.value = '';
       }
     });
   }
 
-  // Download launcher demo
   const dlBtn = document.getElementById('downloadLauncherBtn');
   if (dlBtn) {
     dlBtn.addEventListener('click', () => {
@@ -637,12 +628,13 @@ function initPlanTabs() {
 function initCheckoutModal() {
   const modal = document.getElementById('checkoutModal');
   const closeBtn = document.getElementById('modalCloseBtn');
-  const planButtons = document.querySelectorAll('.cv-card-btn');
+  const modalButtons = document.querySelectorAll('.open-checkout-modal');
   const modalTitle = document.getElementById('modalPlanTitle');
   const modalPrice = document.getElementById('modalPlanPrice');
 
-  planButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
+  modalButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const planName = btn.getAttribute('data-plan') || 'Lifetime Premium';
       const planPrice = btn.getAttribute('data-price') || '999₽';
       if (modalTitle) modalTitle.textContent = `Silent — ${planName}`;

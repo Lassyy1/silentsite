@@ -687,7 +687,8 @@ html[data-theme="light"] .mh-btn-white-sm {
 .cv-eyebrow .cv-icon {
   width: 15px;
   height: 15px;
-  color: #16171b;
+  color: currentColor;
+  stroke: currentColor;
 }
 
 /* Headings */
@@ -1334,6 +1335,8 @@ html[data-theme="light"] .mh-btn-white-sm {
   align-items: center;
   justify-content: center;
   text-decoration: none;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .cv-card-btn:hover {
@@ -1586,42 +1589,7 @@ html[data-theme="light"] .mh-btn-white-sm {
 /* ==========================================================================
    Catlavan Clean Light Profile View (White & Slate Theme)
    ========================================================================== */
-body.in-profile .mh-header {
-  background: rgba(255, 255, 255, 0.92) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-body.in-profile .mh-brand {
-  color: #16171b !important;
-}
-body.in-profile .mh-brand-img {
-  filter: brightness(0.2) !important;
-}
-body.in-profile .mh-nav-link {
-  color: #5a6072 !important;
-}
-body.in-profile .mh-nav-link:hover {
-  color: #16171b !important;
-}
-body.in-profile .mh-nav-link svg {
-  color: #5a6072 !important;
-}
-body.in-profile .mh-nav-link:hover svg {
-  color: #16171b !important;
-}
-body.in-profile .mh-user-pill {
-  background: #f1f3f6 !important;
-  border-color: #dbe0ea !important;
-}
-body.in-profile .mh-user-pill:hover {
-  background: #e5e8f0 !important;
-  border-color: #cbd5e1 !important;
-}
-body.in-profile .mh-user-name {
-  color: #16171b !important;
-}
+/* body.in-profile header overrides removed - header is now strictly synced with [data-theme] */
 
 /* User pill styling: ensure perfect centering and margins */
 .mh-user-pill {
@@ -2305,10 +2273,83 @@ body.in-profile .mh-user-name {
   }
 }
 
-
 /* ==========================================================================
-   HIGH-END DARK OBSIDIAN THEME (No inverted text, clean matte obsidian palette)
+   HIGH-END DARK OBSIDIAN THEME (Fully synchronized header, profile, sidebar & landing)
    ========================================================================== */
+
+/* Dark Mode Floating Header (Synchronized instantly everywhere) */
+html[data-theme="dark"] .mh-header {
+  background: rgba(14, 16, 22, 0.78) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+html[data-theme="dark"] .mh-brand {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .mh-brand-img {
+  filter: none !important;
+}
+
+html[data-theme="dark"] .mh-nav-link {
+  color: #949db2 !important;
+}
+
+html[data-theme="dark"] .mh-nav-link:hover {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .mh-nav-link svg {
+  color: #949db2 !important;
+}
+
+html[data-theme="dark"] .mh-nav-link:hover svg {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .mh-theme-toggle {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #f1f3f9 !important;
+}
+
+html[data-theme="dark"] .mh-theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .mh-auth-link {
+  color: #949db2 !important;
+}
+
+html[data-theme="dark"] .mh-auth-link:hover {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .mh-auth-pill {
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #0b0c11 !important;
+}
+
+html[data-theme="dark"] .mh-user-pill {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html[data-theme="dark"] .mh-user-pill:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+html[data-theme="dark"] .mh-user-name {
+  color: #ffffff !important;
+}
+
+/* Landing View Dark Palette */
 html[data-theme="dark"] body {
   background-color: #0b0c11;
   color: #f1f3f9;
@@ -2321,9 +2362,16 @@ html[data-theme="dark"] .cv-body-wrap {
 }
 
 html[data-theme="dark"] .cv-eyebrow {
-  background: #161822 !important;
-  border-color: #232736 !important;
-  color: #98a1b5 !important;
+  background: #171a26 !important;
+  border: 1px solid #272c3d !important;
+  color: #a4adc2 !important;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+html[data-theme="dark"] .cv-eyebrow .cv-icon {
+  color: #a4adc2 !important;
+  stroke: #a4adc2 !important;
 }
 
 html[data-theme="dark"] .cv-h2 {
@@ -2339,19 +2387,19 @@ html[data-theme="dark"] .cv-lead {
 }
 
 html[data-theme="dark"] .cv-social-lbl {
-  color: #6f7587 !important;
+  color: #72798e !important;
 }
 
 html[data-theme="dark"] .cv-icon-btn {
   background: #161822 !important;
-  border-color: #232736 !important;
+  border: 1px solid #252a3a !important;
   color: #b0b7c7 !important;
 }
 
 html[data-theme="dark"] .cv-icon-btn:hover {
   background: #222636 !important;
   color: #ffffff !important;
-  border-color: #373e54 !important;
+  border-color: #3b445e !important;
 }
 
 html[data-theme="dark"] .cv-laptop-card {
@@ -2368,36 +2416,75 @@ html[data-theme="dark"] .cv-laptop-notch {
   background: #2c3040 !important;
 }
 
+/* Help Box (Screenshot 1 Fixes) */
 html[data-theme="dark"] .cv-help-box {
-  background: #12141c !important;
-  border-color: #1e222e !important;
-  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 html[data-theme="dark"] .cv-account-links {
-  color: #767d91 !important;
+  color: #8c93a6 !important;
+}
+
+html[data-theme="dark"] .cv-subtle {
+  color: #8c93a6 !important;
+}
+
+html[data-theme="dark"] .cv-divider-pipe {
+  color: #3b4256 !important;
+}
+
+html[data-theme="dark"] .cv-link {
+  color: #f1f3f9 !important;
+}
+
+html[data-theme="dark"] .cv-link svg {
+  color: #a4adc2 !important;
+}
+
+html[data-theme="dark"] .cv-link:hover {
+  color: #60a5fa !important;
+}
+
+html[data-theme="dark"] .cv-link:hover svg {
+  color: #60a5fa !important;
 }
 
 html[data-theme="dark"] .cv-support-pill {
-  background: #171924 !important;
-  border-color: #232736 !important;
-  color: #cdd3e3 !important;
+  background: #151822 !important;
+  border: 1px solid #252a3a !important;
+  color: #f1f3f9 !important;
+}
+
+html[data-theme="dark"] .cv-support-pill svg {
+  color: #949db2 !important;
 }
 
 html[data-theme="dark"] .cv-support-pill:hover {
-  background: #202434 !important;
-  border-color: #383f56 !important;
+  background: #1f2434 !important;
+  border-color: #3b445e !important;
   color: #ffffff !important;
 }
 
+html[data-theme="dark"] .cv-support-pill:hover svg {
+  color: #60a5fa !important;
+}
+
 html[data-theme="dark"] .cv-dotted-divider {
-  border-top-color: #1e222f !important;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15) !important;
+  border-top: none !important;
 }
 
 html[data-theme="dark"] .cv-tip {
-  color: #767d91 !important;
+  color: #8c93a6 !important;
 }
 
+html[data-theme="dark"] .cv-tip svg {
+  color: #8c93a6 !important;
+}
+
+/* Pricing Section Dark Palette */
 html[data-theme="dark"] .cv-tabs {
   border-bottom-color: #1e222f !important;
 }
@@ -2417,7 +2504,7 @@ html[data-theme="dark"] .cv-tab.active {
 
 html[data-theme="dark"] .cv-price-card {
   background: #12141c !important;
-  border-color: #1e222e !important;
+  border: 1px solid #1e222e !important;
   box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35) !important;
 }
 
@@ -2498,62 +2585,7 @@ html[data-theme="dark"] .cv-footer-links a:hover {
   color: #ffffff !important;
 }
 
-/* Modals Dark Mode */
-html[data-theme="dark"] .cv-modal {
-  background: #141620 !important;
-  border-color: #222636 !important;
-  color: #f1f3f9 !important;
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7) !important;
-}
-
-html[data-theme="dark"] .cv-modal-plan {
-  color: #ffffff !important;
-}
-
-html[data-theme="dark"] .cv-modal-price {
-  color: #ffffff !important;
-}
-
-html[data-theme="dark"] .cv-label {
-  color: #98a1b5 !important;
-}
-
-html[data-theme="dark"] .cv-input {
-  background: #0d0f16 !important;
-  border-color: #252a3b !important;
-  color: #ffffff !important;
-}
-
-html[data-theme="dark"] .cv-input:focus {
-  border-color: #495477 !important;
-}
-
-html[data-theme="dark"] .cv-pay-btn {
-  background: #181b26 !important;
-  border-color: #262b3c !important;
-  color: #c4cbe0 !important;
-}
-
-html[data-theme="dark"] .cv-pay-btn.active {
-  background: #252b3c !important;
-  border-color: #455070 !important;
-  color: #ffffff !important;
-}
-
-html[data-theme="dark"] .cv-auth-tabs {
-  border-bottom-color: #232736 !important;
-}
-
-html[data-theme="dark"] .cv-auth-tab {
-  color: #767d91 !important;
-}
-
-html[data-theme="dark"] .cv-auth-tab.active {
-  color: #ffffff !important;
-  border-bottom-color: #ffffff !important;
-}
-
-/* Dark Mode Profile View */
+/* Profile View Dark Palette (Instant response on theme change) */
 html[data-theme="dark"] #profileView {
   background: #0b0c11 !important;
   color: #f1f3f9 !important;
@@ -2567,9 +2599,13 @@ html[data-theme="dark"] .pf-welcome p {
   color: #8b92a5 !important;
 }
 
+html[data-theme="dark"] .pf-sidebar {
+  color: #f1f3f9 !important;
+}
+
 html[data-theme="dark"] .pf-user-card {
   background: #12141c !important;
-  border-color: #1e222e !important;
+  border: 1px solid #1e222e !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
 }
 
@@ -2589,7 +2625,7 @@ html[data-theme="dark"] .pf-userid {
 
 html[data-theme="dark"] .pf-logout-btn {
   background: #181b24 !important;
-  border-color: #262b3a !important;
+  border: 1px solid #262b3a !important;
   color: #949db2 !important;
 }
 
@@ -2607,13 +2643,25 @@ html[data-theme="dark"] .pf-menu-item {
   color: #8d94a7 !important;
 }
 
+html[data-theme="dark"] .pf-menu-item svg {
+  color: #8d94a7 !important;
+}
+
 html[data-theme="dark"] .pf-menu-item:hover {
   background: #171a24 !important;
   color: #f1f3f9 !important;
 }
 
+html[data-theme="dark"] .pf-menu-item:hover svg {
+  color: #f1f3f9 !important;
+}
+
 html[data-theme="dark"] .pf-menu-item.active {
   background: #252a3a !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .pf-menu-item.active svg {
   color: #ffffff !important;
 }
 
@@ -2631,7 +2679,7 @@ html[data-theme="dark"] .pf-help-sub {
 
 html[data-theme="dark"] .pf-help-btn {
   background: #151722 !important;
-  border-color: #222636 !important;
+  border: 1px solid #222636 !important;
   color: #c4cbe0 !important;
 }
 
@@ -2643,7 +2691,7 @@ html[data-theme="dark"] .pf-help-btn:hover {
 
 html[data-theme="dark"] .pf-card {
   background: #12141c !important;
-  border-color: #1e222e !important;
+  border: 1px solid #1e222e !important;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35) !important;
 }
 
@@ -2661,7 +2709,7 @@ html[data-theme="dark"] .pf-card-icon {
 
 html[data-theme="dark"] .pf-subcard-password {
   background: #171924 !important;
-  border-color: #232738 !important;
+  border: 1px solid #232738 !important;
 }
 
 html[data-theme="dark"] .pf-subcard-title {
@@ -2674,7 +2722,7 @@ html[data-theme="dark"] .pf-subcard-desc {
 
 html[data-theme="dark"] .pf-btn-secondary {
   background: #1f2332 !important;
-  border-color: #2d3348 !important;
+  border: 1px solid #2d3348 !important;
   color: #dce2f2 !important;
 }
 
@@ -2685,6 +2733,10 @@ html[data-theme="dark"] .pf-btn-secondary:hover {
 }
 
 html[data-theme="dark"] .pf-info-label-row {
+  color: #72798e !important;
+}
+
+html[data-theme="dark"] .pf-info-label-row svg {
   color: #72798e !important;
 }
 
@@ -2725,7 +2777,7 @@ html[data-theme="dark"] .pf-input:focus {
 
 html[data-theme="dark"] .pf-btn-activate {
   background: #2a3144 !important;
-  border-color: #38415a !important;
+  border: 1px solid #38415a !important;
   color: #ffffff !important;
 }
 
@@ -2735,10 +2787,14 @@ html[data-theme="dark"] .pf-btn-activate:hover {
 
 html[data-theme="dark"] .pf-spec-item {
   background: #171924 !important;
-  border-color: #232738 !important;
+  border: 1px solid #232738 !important;
 }
 
 html[data-theme="dark"] .pf-spec-label {
+  color: #72798e !important;
+}
+
+html[data-theme="dark"] .pf-spec-label svg {
   color: #72798e !important;
 }
 
@@ -2748,7 +2804,7 @@ html[data-theme="dark"] .pf-spec-val {
 
 html[data-theme="dark"] .pf-btn-download {
   background: #2a3144 !important;
-  border-color: #38415a !important;
+  border: 1px solid #38415a !important;
   color: #ffffff !important;
 }
 
@@ -2766,4 +2822,59 @@ html[data-theme="dark"] .pf-trouble-note a {
 
 html[data-theme="dark"] .pf-trouble-note a:hover {
   color: #ffffff !important;
+}
+
+/* Modals Dark Mode */
+html[data-theme="dark"] .cv-modal {
+  background: #141620 !important;
+  border: 1px solid #222636 !important;
+  color: #f1f3f9 !important;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7) !important;
+}
+
+html[data-theme="dark"] .cv-modal-plan {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .cv-modal-price {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .cv-label {
+  color: #98a1b5 !important;
+}
+
+html[data-theme="dark"] .cv-input {
+  background: #0d0f16 !important;
+  border: 1px solid #252a3b !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .cv-input:focus {
+  border-color: #495477 !important;
+}
+
+html[data-theme="dark"] .cv-pay-btn {
+  background: #181b26 !important;
+  border: 1px solid #262b3c !important;
+  color: #c4cbe0 !important;
+}
+
+html[data-theme="dark"] .cv-pay-btn.active {
+  background: #252b3c !important;
+  border-color: #455070 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .cv-auth-tabs {
+  border-bottom-color: #232736 !important;
+}
+
+html[data-theme="dark"] .cv-auth-tab {
+  color: #767d91 !important;
+}
+
+html[data-theme="dark"] .cv-auth-tab.active {
+  color: #ffffff !important;
+  border-bottom-color: #ffffff !important;
 }
