@@ -953,7 +953,7 @@ function initProfileDashboard() {
   const dlBtn = document.getElementById('downloadLauncherBtn');
   if (dlBtn) {
     dlBtn.addEventListener('click', () => {
-      alert('Загрузка SilentLauncher.exe началась...');
+      window.location.href = 'https://github.com/Lassyy1/Launcher/releases/download/v1/SilentLauncher.exe';
     });
   }
 }
