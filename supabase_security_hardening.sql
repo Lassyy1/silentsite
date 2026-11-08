@@ -235,20 +235,32 @@ create or replace function public.generate_secure_key_code()
 returns text as $$
 declare
   chars text := '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  raw_bytes bytea;
   res text := 'SILENT-';
   i int;
-  byte_val int;
+  b int;
 begin
+  -- Supabase хранит расширения в схеме extensions, либо fallback на нативный sha256/uuid
+  begin
+    raw_bytes := extensions.gen_random_bytes(16);
+  exception when others then
+    begin
+      raw_bytes := gen_random_bytes(16);
+    exception when others then
+      raw_bytes := sha256((gen_random_uuid()::text || clock_timestamp()::text || random()::text)::bytea);
+    end;
+  end;
+
   for i in 1..16 loop
-    byte_val := get_byte(gen_random_bytes(1), 0);
-    res := res || substr(chars, (byte_val % 32) + 1, 1);
+    b := get_byte(raw_bytes, i - 1);
+    res := res || substr(chars, (b % 32) + 1, 1);
     if i in (4, 8, 12) then
       res := res || '-';
     end if;
   end loop;
   return res;
 end;
-$$ language plpgsql security definer set search_path = public;
+$$ language plpgsql security definer set search_path = public, extensions;
 
 -- ============================================================================
 -- 6. АДМИН-ПАНЕЛЬ (СЕРВЕРНАЯ ЗАЩИТА)
@@ -447,3 +459,64 @@ begin
   end if;
 end;
 $$ language plpgsql security definer set search_path = public;
+
+-- ============================================================================
+-- 8. ХРАНИЛИЩЕ СЕКРЕТОВ И ВЫДАЧА AES-256 КЛЮЧА ТОЛЬКО ПО ПЛАТНОЙ ПОДПИСКЕ
+-- ============================================================================
+create table if not exists public.app_secrets (
+  id text primary key,
+  secret_val text not null
+);
+
+alter table public.app_secrets enable row level security;
+
+-- Прямой доступ к секретам с клиента запрещен полностью
+drop policy if exists "Deny all client access to app_secrets" on public.app_secrets;
+create policy "Deny all client access to app_secrets"
+on public.app_secrets for select
+using (false);
+
+-- Мастер-ключ AES-256 (32 байта в hex) для шифрования silent-client.enc
+insert into public.app_secrets (id, secret_val)
+values ('client_aes_key', 'b8f2d5e7a1c3e9f40826471928374651a2b3c4d5e6f708192a3b4c5d6e7f8091')
+on conflict (id) do nothing;
+
+create or replace function public.get_client_decryption_key()
+returns json as $$
+declare
+  p_rec record;
+  key_val text;
+begin
+  if auth.uid() is null then
+    return json_build_object('success', false, 'message', 'Требуется авторизация');
+  end if;
+
+  select * into p_rec from public.profiles where id = auth.uid();
+  if not found then
+    return json_build_object('success', false, 'message', 'Профиль не найден');
+  end if;
+
+  if p_rec.is_banned then
+    return json_build_object('success', false, 'message', 'Аккаунт заблокирован');
+  end if;
+
+  if p_rec.active_sub is null or p_rec.active_sub = 'Free' then
+    return json_build_object('success', false, 'message', 'Требуется активная платная подписка');
+  end if;
+
+  if p_rec.sub_expiry is not null and p_rec.sub_expiry < now() then
+    return json_build_object('success', false, 'message', 'Срок вашей подписки истек');
+  end if;
+
+  select secret_val into key_val from public.app_secrets where id = 'client_aes_key';
+  if key_val is null then
+    return json_build_object('success', false, 'message', 'Ключ шифрования не настроен на сервере');
+  end if;
+
+  return json_build_object('success', true, 'aes_key', key_val);
+end;
+$$ language plpgsql security definer set search_path = public;
+
+grant execute on function public.get_client_decryption_key() to authenticated;
+revoke execute on function public.get_client_decryption_key() from anon, public;
+
