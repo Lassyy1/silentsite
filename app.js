@@ -6,6 +6,8 @@ const SUPABASE_URL = 'https://jiklujlueadsxjckhpuq.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_FF2Up7xoQqoV3apoY8csrQ_43VJrsYw';
 
 let supabaseClient = null;
+
+let currentUserRole = 'user';
 function getSupabase() {
   if (!supabaseClient && window.supabase) {
     try {
@@ -83,7 +85,6 @@ function initSpaRouter() {
         if (!skipHistory) {
           history.pushState({ view: 'profile' }, '', '#profile');
         }
-        loadUserProfileData();
         loadUserProfileData();
       }, 150);
     } else {
@@ -186,6 +187,8 @@ function initAuthSystem() {
   const closeBtn = document.getElementById('authModalCloseBtn');
   const openLoginBtn = document.getElementById('openLoginBtn');
   const openRegisterBtn = document.getElementById('openRegisterBtn');
+  const helpSignInBtn = document.getElementById('helpSignInBtn');
+  const helpSignUpBtn = document.getElementById('helpSignUpBtn');
 
   const authTabs = document.querySelectorAll('.cv-auth-tab');
   const loginForm = document.getElementById('loginForm');
@@ -202,6 +205,7 @@ function initAuthSystem() {
   }
 
   function setLoggedOutState() {
+    currentUserRole = 'user';
     if (guestState) guestState.style.display = 'flex';
     if (userBadge) userBadge.style.display = 'none';
   }
@@ -267,6 +271,20 @@ function initAuthSystem() {
 
   if (openRegisterBtn) {
     openRegisterBtn.addEventListener('click', () => {
+      switchAuthTab('register');
+      if (authModal) authModal.classList.add('open');
+    });
+  }
+
+  if (helpSignInBtn) {
+    helpSignInBtn.addEventListener('click', () => {
+      switchAuthTab('login');
+      if (authModal) authModal.classList.add('open');
+    });
+  }
+
+  if (helpSignUpBtn) {
+    helpSignUpBtn.addEventListener('click', () => {
       switchAuthTab('register');
       if (authModal) authModal.classList.add('open');
     });
@@ -403,7 +421,10 @@ async function loadUserProfileData() {
       if (profile.sub_expiry) subExpiry = new Date(profile.sub_expiry);
       if (profile.created_at) regDate = new Date(profile.created_at).toLocaleDateString('ru-RU');
       if (profile.uid !== undefined && profile.uid !== null) uid = profile.uid;
-      if (profile.role) role = profile.role;
+      if (profile.role) {
+        role = profile.role;
+        currentUserRole = profile.role;
+      }
 
       if (profile.is_banned) {
         alert('Ваш аккаунт заблокирован администратором.');
@@ -479,6 +500,11 @@ async function adminLoadKeys(filter = 'active') {
   const tableBody = document.getElementById('adminKeysTableBody');
   if (!tableBody) return;
 
+  if (currentUserRole !== 'admin') {
+    tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #ef4444; padding: 20px;">Доступ запрещен: требуются права администратора</td></tr>';
+    return;
+  }
+
   const sb = getSupabase();
   if (!sb) return;
 
@@ -547,6 +573,11 @@ window.adminDeleteKey = async function(keyCode) {
 async function adminLoadUsers() {
   const tableBody = document.getElementById('adminUsersTableBody');
   if (!tableBody) return;
+
+  if (currentUserRole !== 'admin') {
+    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #ef4444; padding: 20px;">Доступ запрещен: требуются права администратора</td></tr>';
+    return;
+  }
 
   const sb = getSupabase();
   if (!sb) return;

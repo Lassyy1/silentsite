@@ -17,11 +17,18 @@ import hashlib
 import hmac
 import secrets
 import time
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import mimetypes
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'silent.db')
 STATIC_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH, timeout=10.0)
+    conn.execute('PRAGMA journal_mode = WAL;')
+    conn.execute('PRAGMA busy_timeout = 5000;')
+    conn.execute('PRAGMA foreign_keys = ON;')
+    return conn
 
 # In-Memory Rate Limiter: { ip: [timestamp1, timestamp2, ...] }
 RATE_LIMIT_STORE = {}
@@ -30,6 +37,11 @@ RATE_LIMIT_MAX_AUTH = 10  # max 10 auth requests per minute per IP
 
 def is_rate_limited(ip, max_requests=RATE_LIMIT_MAX_AUTH):
     now = time.time()
+    # Prune stale entries if store grows too large
+    if len(RATE_LIMIT_STORE) > 10000:
+        stale = [k for k, v in RATE_LIMIT_STORE.items() if not v or now - v[-1] >= RATE_LIMIT_WINDOW]
+        for k in stale:
+            del RATE_LIMIT_STORE[k]
     if ip not in RATE_LIMIT_STORE:
         RATE_LIMIT_STORE[ip] = []
     # Filter out timestamps older than window
@@ -54,7 +66,7 @@ def verify_pw(pw, stored_hash):
     return hmac.compare_digest(computed, hash_val)
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cur = conn.cursor()
     
     # 1. Users table
@@ -117,7 +129,7 @@ def init_db():
 def get_user_by_token(token):
     if not token:
         return None
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cur = conn.cursor()
     cur.execute('''
         SELECT u.id, u.username, u.email, u.hwid, u.registration_date, u.days_left, u.license_status, u.role, u.is_banned
@@ -144,13 +156,14 @@ def get_user_by_token(token):
 
 class SilentRequestHandler(BaseHTTPRequestHandler):
     def get_client_ip(self):
-        # Support Cloudflare / Reverse Proxy headers
-        cf_ip = self.headers.get('CF-Connecting-IP')
-        if cf_ip:
-            return cf_ip
-        x_forwarded = self.headers.get('X-Forwarded-For')
-        if x_forwarded:
-            return x_forwarded.split(',')[0].strip()
+        # Support Cloudflare / Reverse Proxy headers only when TRUST_PROXY is explicitly enabled
+        if os.environ.get('TRUST_PROXY', '').lower() in ('1', 'true', 'yes'):
+            cf_ip = self.headers.get('CF-Connecting-IP')
+            if cf_ip:
+                return cf_ip.strip()
+            x_forwarded = self.headers.get('X-Forwarded-For')
+            if x_forwarded:
+                return x_forwarded.split(',')[0].strip()
         return self.client_address[0]
 
     def end_headers(self):
@@ -204,25 +217,6 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
             token = self.get_auth_token()
             user = get_user_by_token(token)
             if not user:
-                # If guest, provide read-only seed of user 0 for visitor preview
-                conn = sqlite3.connect(DB_PATH)
-                cur = conn.cursor()
-                cur.execute('SELECT id, username, email, hwid, registration_date, days_left, license_status, role FROM users WHERE id = 0')
-                row = cur.fetchone()
-                conn.close()
-                if row:
-                    user = {
-                        'id': row[0],
-                        'username': row[1],
-                        'email': row[2],
-                        'hwid': row[3],
-                        'registration_date': row[4],
-                        'days_left': row[5],
-                        'license_status': row[6],
-                        'role': row[7]
-                    }
-                    self.send_json({'ok': True, 'user': user, 'is_default': True})
-                    return
                 self.send_json({'ok': False, 'error': 'Unauthorized'}, status=401)
                 return
             self.send_json({'ok': True, 'user': user})
@@ -236,7 +230,7 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
                 self.send_json({'ok': False, 'error': 'Forbidden: Admin access required'}, status=403)
                 return
 
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cur = conn.cursor()
             cur.execute('SELECT id, username, email, hwid, registration_date, days_left, license_status, role, is_banned FROM users')
             rows = cur.fetchall()
@@ -313,7 +307,7 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
                 self.send_json({'ok': False, 'error': 'Пароль должен быть не менее 4 символов'}, status=400)
                 return
 
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cur = conn.cursor()
             try:
                 cur.execute('SELECT MAX(id) FROM users')
@@ -360,7 +354,7 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
                 self.send_json({'ok': False, 'error': 'Введите никнейм'}, status=400)
                 return
 
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cur = conn.cursor()
             cur.execute('''
                 SELECT id, username, password_hash, email, hwid, registration_date, days_left, license_status, role, is_banned
@@ -407,17 +401,8 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
         token = self.get_auth_token()
         user = get_user_by_token(token)
         if not user:
-            # Check if this is a local demo fallback to user 0
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
-            cur.execute('SELECT id, username, email, hwid, registration_date, days_left, license_status, role FROM users WHERE id = 0')
-            row = cur.fetchone()
-            conn.close()
-            if row:
-                user = {'id': row[0], 'username': row[1], 'email': row[2], 'hwid': row[3], 'days_left': row[5], 'license_status': row[6], 'role': row[7]}
-            else:
-                self.send_json({'ok': False, 'error': 'Unauthorized'}, status=401)
-                return
+            self.send_json({'ok': False, 'error': 'Unauthorized'}, status=401)
+            return
 
         user_id = user['id']
 
@@ -428,7 +413,7 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
                 self.send_json({'ok': False, 'error': 'Пароль должен быть не менее 4 символов'}, status=400)
                 return
             
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cur = conn.cursor()
             cur.execute('UPDATE users SET password_hash = ? WHERE id = ?', (hash_pw(new_password), user_id))
             conn.commit()
@@ -443,7 +428,7 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
                 self.send_json({'ok': False, 'error': 'Введите корректный email'}, status=400)
                 return
 
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cur = conn.cursor()
             cur.execute('UPDATE users SET email = ? WHERE id = ?', (new_email, user_id))
             conn.commit()
@@ -451,31 +436,30 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
             self.send_json({'ok': True, 'email': new_email})
             return
 
-        # 5. Activate License Key
+        # 5. Activate License Key (Race-Condition Free Atomic Claim)
         if path == '/api/activate-key':
             key_code = body.get('key', '').strip().upper()
             if not key_code:
                 self.send_json({'ok': False, 'error': 'Введите ключ активации'}, status=400)
                 return
 
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute('SELECT days, is_used FROM keys WHERE key_code = ?', (key_code,))
+            cur.execute('SELECT days FROM keys WHERE key_code = ?', (key_code,))
             row = cur.fetchone()
             
-            days = 360
-            if row:
-                if row[1] == 1:
-                    conn.close()
-                    self.send_json({'ok': False, 'error': 'Этот ключ уже активирован'}, status=400)
-                    return
-                days = row[0]
-                cur.execute('UPDATE keys SET is_used = 1, used_by = ? WHERE key_code = ?', (user_id, key_code))
-            else:
-                if key_code.startswith('SILENT-'):
-                    days = 360
-                else:
-                    days = 30
+            if not row:
+                conn.close()
+                self.send_json({'ok': False, 'error': 'Недействительный лицензионный ключ'}, status=400)
+                return
+
+            days = row[0]
+            # Atomic update: only one request can update is_used from 0 to 1
+            cur.execute('UPDATE keys SET is_used = 1, used_by = ? WHERE key_code = ? AND is_used = 0', (user_id, key_code))
+            if cur.rowcount == 0:
+                conn.close()
+                self.send_json({'ok': False, 'error': 'Этот ключ уже активирован'}, status=400)
+                return
 
             cur.execute('''
                 UPDATE users 
@@ -499,7 +483,7 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
 
             days = int(body.get('days', 360))
             new_key = f"SILENT-{secrets.token_hex(4).upper()}-{days}"
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_connection()
             cur = conn.cursor()
             cur.execute('INSERT INTO keys (key_code, days) VALUES (?, ?)', (new_key, days))
             conn.commit()
@@ -510,7 +494,7 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
         # 7. Logout
         if path == '/api/logout':
             if token:
-                conn = sqlite3.connect(DB_PATH)
+                conn = get_db_connection()
                 cur = conn.cursor()
                 cur.execute('DELETE FROM sessions WHERE token = ?', (token,))
                 conn.commit()
@@ -523,7 +507,7 @@ class SilentRequestHandler(BaseHTTPRequestHandler):
 def run(port=8080):
     init_db()
     server_address = ('0.0.0.0', port)
-    httpd = HTTPServer(server_address, SilentRequestHandler)
+    httpd = ThreadingHTTPServer(server_address, SilentRequestHandler)
     print(f"Silent Hardened Server running on http://0.0.0.0:{port}")
     httpd.serve_forever()
 

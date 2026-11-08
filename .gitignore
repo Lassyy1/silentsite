@@ -2,3 +2,6 @@ cloudflared.exe
 catlavan_*.html
 __pycache__/
 *.pyc
+*.db
+silent.db
+
