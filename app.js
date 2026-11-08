@@ -84,6 +84,7 @@ function initSpaRouter() {
           history.pushState({ view: 'profile' }, '', '#profile');
         }
         loadUserProfileData();
+        loadUserProfileData();
       }, 150);
     } else {
       document.body.classList.remove('in-profile');
@@ -118,6 +119,7 @@ function initSpaRouter() {
     userMenuToggle.addEventListener('click', (e) => {
       e.preventDefault();
       switchView('profile');
+      loadUserProfileData();
     });
   }
 
