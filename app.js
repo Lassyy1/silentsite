@@ -2,7 +2,7 @@
 // ==========================================================================
 // SUPABASE CLIENT INITIALIZATION
 // ==========================================================================
-const SUPABASE_URL = 'https://zqbfnscycruydgeiexmp.supabase.co';
+const SUPABASE_URL = 'https://zqbfnscycruydgeiexwp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_4nzCvZvgErwyrIyDiRRJ1A_zAS14etW';
 
 let supabaseClient = null;
